@@ -1,118 +1,97 @@
 # Clinical NLP Mortality Prediction
 
-This project explores whether early clinical text can be used to predict in-hospital mortality for ICU patients. Using the MIMIC-IV dataset, I constructed an ICU cohort and extracted radiology reports from the first 24 hours of admission to evaluate how much predictive signal is available from limited early clinical documentation.
+Predicting ICU in-hospital mortality from first-24-hour radiology notes using MIMIC-IV, TF-IDF + Logistic Regression, and BioClinicalBERT.
 
-The task is framed as a binary classification problem: predicting whether a patient experiences in-hospital mortality based only on early radiology notes.
+This project evaluates whether early clinical text contains enough signal to support mortality risk prediction. I constructed an ICU cohort from MIMIC-IV, restricted predictors to radiology notes written within the first 24 hours of ICU admission, and compared an interpretable linear NLP baseline against a clinical transformer model.
 
 > This project is intended for research and educational purposes only. It is not a diagnostic tool or clinical decision-making system.
 
-## Abstract
+![Clinical NLP Mortality Prediction Pipeline](project_pipeline.png)
 
-This project investigates whether early clinical text can be used to predict in-hospital mortality for ICU patients. Using the MIMIC-IV dataset, I constructed a cohort of ICU stays and extracted radiology reports from the first 24 hours of admission to evaluate how much predictive signal is available from limited early clinical documentation.
+## Overview
 
-The task was framed as a binary classification problem, where the model predicts whether a patient will experience in-hospital mortality. I developed and compared multiple NLP modeling approaches, including a TF-IDF + Logistic Regression baseline and a BioClinicalBERT transformer model. Because the outcome was imbalanced, model evaluation emphasized precision, recall, F1 score, ROC AUC, PR AUC, and threshold tuning rather than accuracy alone.
+Early risk prediction is difficult because the first 24 hours of clinical documentation are incomplete, noisy, and often limited to specific findings. This project tests whether those early radiology notes still contain measurable signal for in-hospital mortality prediction.
 
-The results show that early radiology text contains meaningful but limited predictive signal. The interpretable TF-IDF baseline performed strongly while highlighting clinically relevant terms associated with mortality risk, such as references to shock, cardiac arrest, metastatic disease, and ECMO. BioClinicalBERT provided a transformer-based comparison, but its performance should be interpreted in the context of computational constraints and subset-based training. The comparison highlights the practical strength of interpretable linear baselines, while leaving room for future work with larger-scale transformer training and structured LLM-derived features.
+The task is framed as binary classification:
 
-Overall, this project demonstrates the potential and limitations of using early clinical notes for patient risk prediction. The work is intended as a research and educational analysis of clinical NLP methods, not as a diagnostic or clinical decision-making system.
+- **Input:** Radiology notes from the first 24 hours of ICU admission
+- **Target:** In-hospital mortality
+- **Dataset:** MIMIC-IV ICU stays, hospital admissions, and radiology notes
+- **Models:** TF-IDF + Logistic Regression and BioClinicalBERT
+- **Evaluation focus:** F1 score, precision, recall, ROC AUC, PR AUC, confusion matrices, and threshold tuning
 
-## Research Question
+## Dataset and Cohort
 
-Can radiology reports from the first 24 hours of ICU admission provide enough clinical signal to predict in-hospital mortality?
+This project uses MIMIC-IV, a de-identified critical care database containing hospital admissions, ICU stays, clinical notes, and patient outcomes.
 
-This question is important because early risk prediction could help identify high-risk patients sooner. However, early clinical notes are limited, incomplete, and often focused on specific findings rather than the full patient condition. This makes the task challenging and clinically realistic.
+The raw MIMIC-IV data is **not included** in this repository due to data use restrictions. Access requires PhysioNet approval and completion of the required training.
 
-## Dataset
+High-level cohort construction:
 
-This project uses the MIMIC-IV dataset, a large de-identified critical care database containing hospital admissions, ICU stays, clinical notes, and patient outcomes.
+- Linked ICU stays to hospital admissions
+- Extracted radiology notes from the first 24 hours of ICU admission
+- Aggregated early note text at the ICU stay level
+- Created a binary in-hospital mortality label
+- Split the cohort into training, validation, and test sets
+- Restricted predictors to early documentation only to reduce data leakage
 
-The raw MIMIC-IV data is **not included** in this repository due to data use restrictions. Access to the dataset requires completion of the required training and approval through PhysioNet.
+![Mortality Label Distribution](images/mortality_label_distribution.png)
 
-### Data sources used
+## Methods
 
-The project uses the following types of data:
+### TF-IDF + Logistic Regression
 
-- Hospital admissions
-- ICU stay records
-- Radiology notes
-- In-hospital mortality labels
+The baseline model uses TF-IDF vectorization followed by Logistic Regression. This approach is fast, interpretable, and effective for sparse clinical text classification.
 
-The final modeling dataset was created by linking ICU stays with early radiology reports and patient outcomes.
+The model also supports feature coefficient analysis, making it possible to inspect which terms are most associated with higher or lower predicted mortality risk.
 
-## Cohort Construction
+### BioClinicalBERT
 
-The cohort was constructed by identifying ICU stays and linking them to radiology notes written within the first 24 hours of admission. Each patient stay was assigned a binary mortality label based on whether the patient died during the hospital admission.
+BioClinicalBERT was used as a transformer-based clinical NLP comparison. This model provides contextual language representations pretrained on biomedical and clinical text.
 
-High-level cohort construction steps:
+However, the BioClinicalBERT experiment was limited by compute constraints and trained on a smaller subset of the data. Because of that, the comparison should be interpreted as a practical project-level comparison rather than definitive evidence that one architecture is always better for this task.
 
-1. Load admissions, ICU stays, and radiology notes
-2. Link ICU stays to hospital admissions
-3. Filter radiology notes to the first 24 hours of admission
-4. Aggregate early radiology text at the ICU stay level
-5. Create the binary in-hospital mortality label
-6. Split data into training, validation, and test sets
-7. Train and evaluate NLP models
+### Threshold Tuning
 
-## Modeling Approach
+Because in-hospital mortality is an imbalanced outcome, accuracy and default 0.50 thresholds are not sufficient. I tuned classification thresholds on the validation set to optimize F1 and better evaluate the precision-recall tradeoff for the mortality class.
 
-This project compares both traditional and transformer-based NLP methods.
+![TF-IDF Threshold Tuning](images/tfidf_logistic_regression_threshold_tuning.png)
 
-### 1. TF-IDF + Logistic Regression Baseline
+## Evaluation
 
-The first model uses TF-IDF vectorization to convert radiology text into sparse numerical features. A Logistic Regression classifier is then trained to predict in-hospital mortality.
+Models were evaluated using:
 
-This baseline is useful because it is:
-
-- Fast to train
-- Interpretable
-- Strong for text classification tasks
-- Easy to evaluate using feature coefficients
-
-The model also allows inspection of terms most associated with mortality risk.
-
-### 2. BioClinicalBERT
-
-A transformer-based model was also evaluated using BioClinicalBERT, a BERT model pretrained on biomedical and clinical text. This approach was used to test whether contextual clinical language representations could improve performance beyond the TF-IDF baseline.
-
-However, the BioClinicalBERT experiment was limited by computational constraints and was trained on a subset of the data. As a result, the comparison should be interpreted as a practical project-level comparison rather than a definitive statement about whether linear models or transformer architectures are more capable for this task.
-
-### 3. Threshold Tuning
-
-Because the mortality outcome is imbalanced, default classification thresholds are not always appropriate. The project evaluates different decision thresholds to better understand the tradeoff between precision and recall.
-
-Threshold tuning was used to optimize F1 score and better reflect performance on the minority mortality class.
-
-## Evaluation Metrics
-
-Because the dataset is imbalanced, accuracy alone is not sufficient. The project evaluates models using:
-
+- F1 score
 - Precision
 - Recall
-- F1 score
 - ROC AUC
 - PR AUC
 - Confusion matrix
 - Threshold sweep analysis
 
-These metrics provide a more complete picture of model performance, especially for the positive mortality class.
+These metrics are more appropriate than accuracy alone because the positive mortality class is clinically important and less frequent.
 
 ## Results
 
-The models showed that early radiology reports contain meaningful but limited predictive signal for in-hospital mortality.
+The TF-IDF + Logistic Regression baseline performed strongly and provided the most interpretable results. The model identified clinically meaningful terms associated with mortality risk, including severe findings such as **cardiac arrest**, **shock**, **metastatic disease**, **ECMO**, and **ascites**.
 
-The TF-IDF + Logistic Regression baseline performed strongly and provided interpretable feature weights. The coefficient analysis was one of the most useful parts of the project because it showed that the model learned clinically meaningful terms. For example, words and phrases such as cardiac arrest, shock, metastatic disease, ECMO, and ascites were associated with higher predicted mortality risk, while terms such as normal and postoperative were associated with lower predicted risk.
+BioClinicalBERT provided a transformer-based comparison, but its lower performance should be interpreted in the context of subset-based training and limited compute. The result suggests that a well-tuned linear baseline can be highly competitive for this task, especially when interpretability and training efficiency matter.
 
-BioClinicalBERT was evaluated as a transformer-based comparison. In this project, the TF-IDF + Logistic Regression model outperformed the BioClinicalBERT experiment. However, this result should be interpreted carefully because the transformer model was trained under computational constraints and used a smaller subset of the data. Therefore, the result is best understood as evidence that the linear baseline was more practical and effective under the project constraints, not as definitive proof that TF-IDF is more capable than transformer-based models for this task.
+![TF-IDF Tuned Confusion Matrix](images/tfidf_logistic_regression_confusion_matrix_tuned_threshold.png)
 
-### Key Takeaway
+## Key Takeaways
 
-Early radiology notes can help identify elevated mortality risk, especially when severe clinical terms are present, but they do not contain the full clinical context needed for highly reliable prediction on their own.
+- First-24-hour radiology notes contain measurable signal for in-hospital mortality prediction.
+- Threshold tuning is important for imbalanced clinical classification.
+- TF-IDF + Logistic Regression performed strongly and produced interpretable feature coefficients.
+- BioClinicalBERT was limited by computational constraints, so the model comparison should not be overgeneralized.
+- Early radiology notes alone are not enough for reliable clinical deployment, but they can support exploratory risk modeling.
 
 ## Model Interpretation
 
-One advantage of the TF-IDF + Logistic Regression baseline is interpretability. By examining model coefficients, the project identifies terms that are positively or negatively associated with predicted mortality risk.
+One advantage of the TF-IDF + Logistic Regression model is that its coefficients can be inspected directly.
 
-Examples of terms associated with higher risk included:
+Examples of terms associated with higher predicted mortality risk included:
 
 - cardiac arrest
 - shock
@@ -120,9 +99,31 @@ Examples of terms associated with higher risk included:
 - ECMO
 - ascites
 
-Examples of terms associated with lower risk included more routine or less severe clinical language, such as references to normal findings or postoperative context.
+Examples of terms associated with lower predicted mortality risk included more routine or less severe clinical language, such as:
 
-These results suggest that the model learned clinically meaningful patterns, although the predictions should not be interpreted as causal or diagnostic.
+- normal
+- postoperative
+
+These associations are predictive patterns, not causal explanations. The model is learning correlations in early clinical documentation, not determining whether specific findings cause mortality.
+
+## Limitations and Future Work
+
+The strongest result from this project is not that one model family is universally better than another, but that early radiology text contains usable signal for mortality prediction and that threshold selection matters in imbalanced clinical classification.
+
+The TF-IDF + Logistic Regression baseline was trained on the full prepared cohort and produced interpretable feature coefficients. This interpretability is a major advantage of the baseline approach, especially in a clinical setting where understanding model behavior is important.
+
+However, the BioClinicalBERT comparison should be interpreted with caution. The transformer model was trained on a subset of the data due to computational constraints, which likely limited its performance ceiling. Therefore, the result is best viewed as a practical comparison between a fully trained linear baseline and a compute-constrained transformer experiment, not as definitive evidence that TF-IDF is inherently better for this task.
+
+Future work could extend the project in several directions:
+
+- **Full-cohort transformer training:** Fine-tune BioClinicalBERT or another clinical encoder on the full cohort using stronger GPU resources.
+- **Structured LLM feature extraction:** Use a decoder-based language model to transform raw radiology notes into structured summaries, clinical concepts, or risk-factor features before downstream classification.
+- **Hybrid modeling:** Combine structured LLM-extracted features with TF-IDF, clinical embeddings, or structured EHR variables.
+- **Richer clinical inputs:** Add vitals, labs, diagnoses, procedures, demographics, comorbidities, and medication data.
+- **Expanded note sources:** Compare radiology-only text against nursing notes, physician notes, emergency department notes, and discharge summaries.
+- **Probability calibration:** Calibrate predicted probabilities so outputs better reflect clinical risk rather than only binary class labels.
+- **Temporal validation:** Test model performance across admission years to evaluate robustness under distribution shift.
+- **Error analysis:** Review false negatives and false positives more closely, since both types of error have important clinical consequences.
 
 ## Repository Structure
 
@@ -130,4 +131,29 @@ These results suggest that the model learned clinically meaningful patterns, alt
 clinical-nlp-mortality-prediction/
 ├── README.md
 ├── clinical_nlp_mortality_prediction.ipynb
-└── final_report.pdf
+├── report.pdf
+├── project_pipeline.png
+└── images/
+    ├── mortality_label_distribution.png
+    ├── tfidf_logistic_regression_threshold_tuning.png
+    ├── tfidf_logistic_regression_confusion_matrix_default.png
+    ├── tfidf_logistic_regression_confusion_matrix_tuned_threshold.png
+    ├── bioclinicalbert_threshold_tuning.png
+    ├── bioclinicalbert_confusion_matrix_default.png
+    └── bioclinicalbert_confusion_matrix_tuned_threshold.png
+```
+
+## How to Run
+
+The notebook is provided for reproducibility of the modeling workflow, but the raw MIMIC-IV data is not included because it requires approved access through PhysioNet.
+
+To reproduce the project:
+
+1. Obtain approved access to MIMIC-IV and MIMIC-IV-Note through PhysioNet.
+2. Download the required ICU stay, admission, and radiology note tables.
+3. Update the notebook file paths to point to the local data location.
+4. Run the notebook cells in order to construct the cohort, train models, tune thresholds, and evaluate results.
+
+## Disclaimer
+
+This project is for research and educational purposes only. It is not intended for diagnosis, treatment decisions, clinical deployment, or real-time patient risk scoring.
