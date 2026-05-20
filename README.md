@@ -129,6 +129,7 @@ Future work could extend the project in several directions:
 
 ```text
 clinical-nlp-mortality-prediction/
+├── .gitignore
 ├── README.md
 ├── clinical_nlp_mortality_prediction.ipynb
 ├── report.pdf
