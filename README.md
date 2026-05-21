@@ -143,18 +143,3 @@ clinical-nlp-mortality-prediction/
     ├── bioclinicalbert_confusion_matrix_default.png
     └── bioclinicalbert_confusion_matrix_tuned_threshold.png
 ```
-
-## How to Run
-
-The notebook is provided for reproducibility of the modeling workflow, but the raw MIMIC-IV data is not included because it requires approved access through PhysioNet.
-
-To reproduce the project:
-
-1. Obtain approved access to MIMIC-IV and MIMIC-IV-Note through PhysioNet.
-2. Download the required ICU stay, admission, and radiology note tables.
-3. Update the notebook file paths to point to the local data location.
-4. Run the notebook cells in order to construct the cohort, train models, tune thresholds, and evaluate results.
-
-## Disclaimer
-
-This project is for research and educational purposes only. It is not intended for diagnosis, treatment decisions, clinical deployment, or real-time patient risk scoring.
